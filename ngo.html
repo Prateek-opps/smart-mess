@@ -1,0 +1,524 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Mess - NGO Food Rescue</title>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f1f6f2;
+      color: #18352b;
+    }
+
+    header {
+      background: #176b4d;
+      color: white;
+      text-align: center;
+      padding: 22px;
+    }
+
+    header a { color: white; }
+
+    main {
+      max-width: 1100px;
+      margin: 25px auto;
+      padding: 0 16px;
+    }
+
+    .panel {
+      background: white;
+      border-radius: 12px;
+      padding: 22px;
+      margin-bottom: 22px;
+      box-shadow: 0 3px 12px #0000000d;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 15px;
+    }
+
+    label { display: block; font-weight: bold; }
+
+    input, select, textarea, button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 7px;
+      border: 1px solid #cad8ce;
+      border-radius: 7px;
+      font-size: 15px;
+    }
+
+    input, select, textarea { background: white; }
+
+    button {
+      background: #176b4d;
+      color: white;
+      cursor: pointer;
+      border: 0;
+    }
+
+    button:hover { background: #10563c; }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .status {
+      white-space: pre-wrap;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
+
+    .error { color: #b42318; }
+    .success { color: #176b4d; }
+
+    .table-wrap { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 800px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 12px;
+      border-bottom: 1px solid #e4ebe6;
+      vertical-align: top;
+    }
+
+    th { background: #edf5ef; }
+
+    .safe-check {
+      display: flex;
+      gap: 9px;
+      align-items: flex-start;
+      margin-top: 16px;
+    }
+
+    .safe-check input {
+      width: auto;
+      margin-top: 3px;
+    }
+
+    @media (max-width: 600px) {
+      main { padding: 0 10px; }
+      .panel { padding: 15px; }
+    }
+  </style>
+</head>
+
+<body>
+<header>
+  <h1>Smart Mess - NGO Food Rescue</h1>
+  <p>Manage safe surplus food and donation pickup</p>
+  <p><a href="admin.html">Back to Admin Dashboard</a></p>
+  <p id="authStatus">Checking admin login...</p>
+  <button id="logoutBtn" type="button" hidden>Logout</button>
+</header>
+
+<main>
+  <section class="panel">
+    <h2>Create Food Rescue Request</h2>
+    <p>Only record food after the mess admin confirms it is safe to donate.</p>
+
+    <form id="rescueForm">
+      <div class="grid">
+        <label>Meal date
+          <input type="date" id="mealDate" required>
+        </label>
+
+        <label>Meal
+          <select id="meal" required>
+            <option>Breakfast</option>
+            <option>Lunch</option>
+            <option>Dinner</option>
+          </select>
+        </label>
+
+        <label>Food description
+          <input id="food" maxlength="150" required
+            placeholder="e.g. Rice and dal">
+        </label>
+
+        <label>Safe quantity (portions)
+          <input id="quantity" type="number" min="1"
+            step="1" required>
+        </label>
+
+        <label>NGO name
+          <input id="ngoName" maxlength="150" required
+            placeholder="Verified NGO name">
+        </label>
+
+        <label>NGO contact
+          <input id="ngoContact" type="tel" maxlength="30"
+            required placeholder="NGO phone number">
+        </label>
+
+        <label>Pickup location
+          <input id="location" maxlength="250" required
+            placeholder="Mess pickup address">
+        </label>
+
+        <label>Pickup deadline
+          <input id="deadline" type="datetime-local" required>
+        </label>
+      </div>
+
+      <label style="margin-top:16px">
+        Additional notes
+        <textarea id="notes" maxlength="500"
+          placeholder="Packaging, storage, or pickup instructions"></textarea>
+      </label>
+
+      <label class="safe-check">
+        <input type="checkbox" id="safe" required>
+        <span>I confirm this food has been checked and is safe for donation.</span>
+      </label>
+
+      <button id="saveBtn" type="submit" disabled>
+        Create Rescue Request
+      </button>
+
+      <p id="status" class="status" role="status"></p>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h2>Food Rescue Requests</h2>
+    <button id="refreshBtn" type="button" disabled>
+      Refresh requests
+    </button>
+
+    <p id="listStatus" class="status" role="status"></p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Date / Meal</th>
+            <th>Food</th>
+            <th>Quantity</th>
+            <th>NGO</th>
+            <th>Pickup deadline</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="requestRows">
+          <tr>
+            <td colspan="6">Checking login...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<script type="module">
+  import { initializeApp }
+    from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
+
+  import {
+    getFirestore,
+    collection,
+    addDoc,
+    getDocs,
+    serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
+
+  import {
+    getAuth,
+    onAuthStateChanged,
+    signOut
+  } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDeb-ew1yrD6oHNgtbQIAM5b5uhXhNI3aw",
+    authDomain: "smart-mess-1cd4f.firebaseapp.com",
+    projectId: "smart-mess-1cd4f",
+    storageBucket: "smart-mess-1cd4f.firebasestorage.app",
+    messagingSenderId: "766645995131",
+    appId: "1:766645995131:web:2ee19c7fa78deabbf2c4de",
+    measurementId: "G-NL09TX74XY"
+  };
+
+  // Both authorized admin accounts
+  const ADMIN_UIDS = [
+    "CXQvx3oC3kYImLicVJdT5X3wiyg2",
+    "4dEpOy2WFCY9ch5XnmBoFDKppDj2"
+  ];
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+
+  const $ = id => document.getElementById(id);
+
+  let isAdmin = false;
+  let busy = false;
+
+  function showStatus(id, message, type = "") {
+    $(id).textContent = message;
+    $(id).className = "status " + type;
+  }
+
+  function localDate() {
+    const now = new Date();
+    return new Date(
+      now.getTime() - now.getTimezoneOffset() * 60000
+    ).toISOString().slice(0, 10);
+  }
+
+  function addCell(row, value) {
+    const cell = document.createElement("td");
+    cell.textContent = value == null ? "" : String(value);
+    row.appendChild(cell);
+    return cell;
+  }
+
+  function setLoggedOut(message) {
+    isAdmin = false;
+    $("saveBtn").disabled = true;
+    $("refreshBtn").disabled = true;
+    $("logoutBtn").hidden = true;
+
+    showStatus("authStatus", message, "error");
+    showStatus(
+      "status",
+      "Open admin.html and sign in using an authorized admin account.",
+      "error"
+    );
+    showStatus("listStatus", "Admin login required.", "error");
+
+    $("requestRows").replaceChildren();
+    const row = document.createElement("tr");
+    const cell = addCell(row, "Please log in through admin.html.");
+    cell.colSpan = 6;
+    $("requestRows").appendChild(row);
+  }
+
+  $("mealDate").value = localDate();
+
+  async function loadRequests() {
+    if (!isAdmin || !ADMIN_UIDS.includes(auth.currentUser?.uid)) {
+      setLoggedOut("Admin login required.");
+      return;
+    }
+
+    $("refreshBtn").disabled = true;
+    showStatus("listStatus", "Loading rescue requests...");
+
+    try {
+      const snapshot = await getDocs(
+        collection(db, "foodRescueRequests")
+      );
+
+      const requests = snapshot.docs.map(document => ({
+        id: document.id,
+        ...document.data()
+      }));
+
+      requests.sort((a, b) =>
+        String(b.mealDate || "").localeCompare(
+          String(a.mealDate || "")
+        )
+      );
+
+      $("requestRows").replaceChildren();
+
+      if (requests.length === 0) {
+        const row = document.createElement("tr");
+        const cell = addCell(row, "No rescue requests yet.");
+        cell.colSpan = 6;
+        $("requestRows").appendChild(row);
+      }
+
+      requests.forEach(item => {
+        const row = document.createElement("tr");
+
+        addCell(row, `${item.mealDate || ""} / ${item.meal || ""}`);
+        addCell(row, item.food || "");
+        addCell(row, item.quantity);
+        addCell(row, item.ngoName || "");
+        addCell(row, item.deadline || "");
+        addCell(row, item.status || "Pending");
+
+        $("requestRows").appendChild(row);
+      });
+
+      showStatus(
+        "listStatus",
+        `Loaded ${requests.length} request(s).`,
+        "success"
+      );
+    } catch (error) {
+      console.error("Load rescue requests error:", error);
+
+      showStatus(
+        "listStatus",
+        `Could not load requests: ${error.code || ""} ${error.message}`,
+        "error"
+      );
+    } finally {
+      $("refreshBtn").disabled = !isAdmin;
+    }
+  }
+
+  $("rescueForm").addEventListener("submit", async event => {
+    event.preventDefault();
+
+    if (!isAdmin || !ADMIN_UIDS.includes(auth.currentUser?.uid)) {
+      showStatus(
+        "status",
+        "Not authorized. Sign in through admin.html first.",
+        "error"
+      );
+      return;
+    }
+
+    if (busy) return;
+
+    if (!$("safe").checked) {
+      showStatus(
+        "status",
+        "Confirm food safety before creating a request.",
+        "error"
+      );
+      return;
+    }
+
+    const quantity = Number($("quantity").value);
+    const deadline = $("deadline").value;
+    const pickupTime = new Date(deadline).getTime();
+
+    if (!Number.isSafeInteger(quantity) || quantity < 1) {
+      showStatus(
+        "status",
+        "Enter a valid whole-number quantity.",
+        "error"
+      );
+      return;
+    }
+
+    if (!deadline || !Number.isFinite(pickupTime) ||
+        pickupTime <= Date.now()) {
+      showStatus(
+        "status",
+        "Choose a future pickup deadline.",
+        "error"
+      );
+      return;
+    }
+
+    const food = $("food").value.trim();
+    const ngoName = $("ngoName").value.trim();
+    const ngoContact = $("ngoContact").value.trim();
+    const location = $("location").value.trim();
+
+    if (!food || !ngoName || !ngoContact || !location) {
+      showStatus(
+        "status",
+        "Fill in all required fields.",
+        "error"
+      );
+      return;
+    }
+
+    busy = true;
+    $("saveBtn").disabled = true;
+    showStatus("status", "Saving rescue request...");
+
+    try {
+      const user = auth.currentUser;
+
+      await addDoc(collection(db, "foodRescueRequests"), {
+        mealDate: $("mealDate").value,
+        meal: $("meal").value,
+        food,
+        quantity,
+        ngoName,
+        ngoContact,
+        location,
+        deadline,
+        notes: $("notes").value.trim(),
+        safeToDonate: true,
+        status: "Pending",
+        createdBy: user.uid,
+        createdAt: serverTimestamp()
+      });
+
+      showStatus(
+        "status",
+        "Rescue request saved successfully!",
+        "success"
+      );
+
+      $("rescueForm").reset();
+      $("mealDate").value = localDate();
+
+      await loadRequests();
+    } catch (error) {
+      console.error("Save rescue request error:", error);
+
+      showStatus(
+        "status",
+        `Could not save: ${error.code || ""} ${error.message}`,
+        "error"
+      );
+    } finally {
+      busy = false;
+      $("saveBtn").disabled = !isAdmin;
+    }
+  });
+
+  $("refreshBtn").addEventListener("click", loadRequests);
+
+  $("logoutBtn").addEventListener("click", async () => {
+    try {
+      await signOut(auth);
+      setLoggedOut("Logged out.");
+    } catch (error) {
+      console.error(error);
+      showStatus(
+        "authStatus",
+        `Logout failed: ${error.message}`,
+        "error"
+      );
+    }
+  });
+
+  onAuthStateChanged(auth, async user => {
+    if (!user) {
+      setLoggedOut("Not logged in.");
+      return;
+    }
+
+    if (!ADMIN_UIDS.includes(user.uid)) {
+      await signOut(auth);
+      setLoggedOut("This account is not authorized as admin.");
+      return;
+    }
+
+    isAdmin = true;
+    $("saveBtn").disabled = false;
+    $("refreshBtn").disabled = false;
+    $("logoutBtn").hidden = false;
+
+    showStatus("authStatus", "Admin session verified.", "success");
+    showStatus("status", "Admin session verified.", "success");
+
+    await loadRequests();
+  });
+</script>
+</body>
+</html>

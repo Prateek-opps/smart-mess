@@ -1,0 +1,837 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Mess Admin Dashboard</title>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f1f6f2;
+      color: #18352b;
+    }
+
+    header {
+      background: #176b4d;
+      color: white;
+      padding: 24px;
+      text-align: center;
+    }
+
+    main {
+      max-width: 1250px;
+      margin: 28px auto;
+      padding: 0 18px;
+    }
+
+    .panel, .card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 3px 12px #0000000d;
+    }
+
+    .panel { margin-bottom: 24px; }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .card p {
+      margin: 0 0 10px;
+      color: #52665b;
+    }
+
+    .card strong {
+      display: block;
+      font-size: 28px;
+      color: #176b4d;
+      margin-bottom: 5px;
+    }
+
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 18px;
+      align-items: end;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+    }
+
+    input, select, button {
+      padding: 12px;
+      border: 1px solid #cad8ce;
+      border-radius: 7px;
+      font-size: 15px;
+    }
+
+    input, select {
+      background: white;
+      color: #18352b;
+      margin-top: 6px;
+    }
+
+    input[type="checkbox"] {
+      width: auto;
+      margin-right: 8px;
+    }
+
+    button {
+      background: #176b4d;
+      color: white;
+      border: 0;
+      cursor: pointer;
+    }
+
+    button:hover { background: #10563c; }
+    button:disabled { opacity: 0.6; cursor: wait; }
+
+    #logoutBtn {
+      background: white;
+      color: #176b4d;
+    }
+
+    .table-wrap { overflow-x: auto; }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      min-width: 850px;
+    }
+
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid #e4ebe6;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th { background: #edf5ef; }
+
+    .status {
+      margin: 12px 0;
+      white-space: pre-wrap;
+      line-height: 1.5;
+    }
+
+    .error { color: #b42318; }
+    .success { color: #176b4d; }
+
+    .small {
+      color: #52665b;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .login-box {
+      max-width: 460px;
+      margin: 45px auto;
+    }
+
+    .login-box label { margin: 15px 0 6px; }
+    .login-box input { width: 100%; }
+    .login-box button { width: 100%; margin-top: 18px; }
+
+    .login-box input { margin-top: 6px; }
+    #dashboard { display: none; }
+    #logoutBtn { display: none; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 16px;
+      margin: 18px 0;
+    }
+
+    .form-grid input, .form-grid select { width: 100%; }
+
+    .checkbox-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 5px;
+      margin: 18px 0;
+      font-weight: normal;
+    }
+
+    .checkbox-row input { margin-top: 3px; }
+
+    @media (max-width: 600px) {
+      header { padding: 18px 12px; }
+      header h1 { font-size: 24px; }
+      main { padding: 0 12px; }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Smart Mess Admin Dashboard</h1>
+    <p>Meal confirmations, food quantities and food rescue</p>
+    <button id="logoutBtn" type="button">Logout</button>
+  </header>
+
+  <main>
+    <!-- ADMIN LOGIN -->
+    <section id="loginPanel" class="panel login-box">
+      <h2>Admin Login</h2>
+      <p>Sign in with your registered admin email and password.</p>
+
+      <form id="loginForm">
+        <label for="adminEmail">Admin Email</label>
+        <input id="adminEmail" type="email"
+          autocomplete="username" required placeholder="Admin email">
+
+        <label for="adminPassword">Password</label>
+        <input id="adminPassword" type="password"
+          autocomplete="current-password" required placeholder="Password">
+
+        <button id="loginBtn" type="submit">Login</button>
+      </form>
+
+      <p id="loginStatus" class="status" role="status"></p>
+    </section>
+
+    <div id="dashboard">
+      <!-- RESPONSE SUMMARY -->
+      <section class="summary">
+        <div class="card">
+          <p>Total responses</p>
+          <strong id="total">0</strong>
+        </div>
+        <div class="card">
+          <p>Breakfast responses</p>
+          <strong id="breakfast">0</strong>
+        </div>
+        <div class="card">
+          <p>Lunch responses</p>
+          <strong id="lunch">0</strong>
+        </div>
+        <div class="card">
+          <p>Dinner responses</p>
+          <strong id="dinner">0</strong>
+        </div>
+        <div class="card">
+          <p>Attending (Yes)</p>
+          <strong id="attending">0</strong>
+        </div>
+      </section>
+
+      <!-- FOOD DEMAND PREDICTION -->
+      <section class="panel">
+        <h2>Food Demand Prediction</h2>
+        <p>Number of students who confirmed attendance in the current filters.</p>
+
+        <div class="summary">
+          <div class="card">
+            <p>Breakfast demand</p>
+            <strong id="predBreakfast">0</strong>
+            <span>students</span>
+          </div>
+          <div class="card">
+            <p>Lunch demand</p>
+            <strong id="predLunch">0</strong>
+            <span>students</span>
+          </div>
+          <div class="card">
+            <p>Dinner demand</p>
+            <strong id="predDinner">0</strong>
+            <span>students</span>
+          </div>
+        </div>
+
+        <p class="small">
+          Confirmations are estimates of demand, not actual attendance
+          or exact food weight. Use actual attendance and food records
+          to improve preparation decisions.
+        </p>
+      </section>
+
+      <!-- ACTUAL FOOD QUANTITY FORM -->
+      <section class="panel">
+        <h2>Actual Food Quantity Management</h2>
+        <p>Record prepared food, served portions and safe donation quantities.</p>
+
+        <form id="foodQuantityForm">
+          <div class="form-grid">
+            <label for="foodDate">
+              Meal date
+              <input type="date" id="foodDate" required>
+            </label>
+
+            <label for="foodMeal">
+              Meal
+              <select id="foodMeal" required>
+                <option value="Breakfast">Breakfast</option>
+                <option value="Lunch">Lunch</option>
+                <option value="Dinner">Dinner</option>
+              </select>
+            </label>
+
+            <label for="preparedQty">
+              Food prepared (portions)
+              <input type="number" id="preparedQty"
+                min="0" step="1" required placeholder="e.g. 100">
+            </label>
+
+            <label for="servedQty">
+              Food served (portions)
+              <input type="number" id="servedQty"
+                min="0" step="1" required placeholder="e.g. 85">
+            </label>
+          </div>
+
+          <p>
+            Remaining portions:
+            <strong id="remainingQty">0</strong>
+          </p>
+
+          <label class="checkbox-row" for="safeFood">
+            <input type="checkbox" id="safeFood">
+            <span>I confirm that the remaining food is safe and suitable for donation.</span>
+          </label>
+
+          <div class="form-grid">
+            <label for="donationQty">
+              Safe donation quantity (portions)
+              <input type="number" id="donationQty"
+                min="0" step="1" value="0" required>
+            </label>
+
+            <label for="foodNotes">
+              Notes (optional)
+              <input type="text" id="foodNotes"
+                maxlength="300" placeholder="e.g. Rice and dal remaining">
+            </label>
+          </div>
+
+          <p class="small">
+            Remaining food is not automatically treated as donation.
+            Only record a donation quantity after checking food safety.
+            Keep food at safe temperatures and follow local food-safety
+            requirements.
+          </p>
+
+          <button id="saveFoodBtn" type="submit">Save Food Record</button>
+          <p id="foodStatus" class="status" role="status"></p>
+        </form>
+      </section>
+
+      <!-- FOOD RECORD HISTORY -->
+      <section class="panel">
+        <h2>Food Quantity Records</h2>
+        <button id="refreshFoodBtn" type="button">Refresh food records</button>
+        <p id="inventoryStatus" class="status" role="status"></p>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Meal</th>
+                <th>Prepared</th>
+                <th>Served</th>
+                <th>Remaining</th>
+                <th>Safe to donate</th>
+                <th>Donation portions</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody id="inventoryRows">
+              <tr><td colspan="8">No records loaded.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- STUDENT RESPONSES -->
+      <section class="panel">
+        <h2>Student Meal Responses</h2>
+
+        <div class="filters">
+          <label>
+            Search Student ID
+            <input id="search" type="text" placeholder="Student ID">
+          </label>
+
+          <label>
+            Date
+            <input id="dateFilter" type="date">
+          </label>
+
+          <label>
+            Meal
+            <select id="mealFilter">
+              <option value="">All meals</option>
+              <option value="Breakfast">Breakfast</option>
+              <option value="Lunch">Lunch</option>
+              <option value="Dinner">Dinner</option>
+            </select>
+          </label>
+
+          <button id="refreshBtn" type="button">Refresh responses</button>
+        </div>
+
+        <p id="status" class="status" role="status">Please log in.</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Student ID</th>
+                <th>Date</th>
+                <th>Meal</th>
+                <th>Food type</th>
+                <th>Attendance</th>
+                <th>Item preferences</th>
+              </tr>
+            </thead>
+            <tbody id="responseRows">
+              <tr><td colspan="6">No data loaded.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script type="module">
+    import { initializeApp }
+      from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
+
+    import {
+      getFirestore,
+      collection,
+      getDocs,
+      addDoc,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
+
+    import {
+      getAuth,
+      signInWithEmailAndPassword,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDeb-ew1yrD6oHNgtbQIAM5b5uhXhNI3aw",
+      authDomain: "smart-mess-1cd4f.firebaseapp.com",
+      projectId: "smart-mess-1cd4f",
+      storageBucket: "smart-mess-1cd4f.firebasestorage.app",
+      messagingSenderId: "766645995131",
+      appId: "1:766645995131:web:2ee19c7fa78deabbf2c4de",
+      measurementId: "G-NL09TX74XY"
+    };
+
+    // Both authorized admin account UIDs
+    const ADMIN_UIDS = [
+      "CXQvx3oC3kYImLicVJdT5X3wiyg2",
+      "4dEpOy2WFCY9ch5XnmBoFDKppDj2"
+    ];
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    let isAdmin = false;
+    let allResponses = [];
+    let loadingResponses = false;
+    let loadingInventory = false;
+
+    const $ = id => document.getElementById(id);
+
+    function message(element, text, type = "") {
+      element.textContent = text;
+      element.className = "status " + type;
+    }
+
+    function safeText(value) {
+      return value == null ? "" : String(value);
+    }
+
+    function addCell(row, value) {
+      const cell = document.createElement("td");
+      cell.textContent = safeText(value);
+      row.appendChild(cell);
+      return cell;
+    }
+
+    function setDefaultFoodDate() {
+      const now = new Date();
+      const localDate = new Date(
+        now.getTime() - now.getTimezoneOffset() * 60000
+      ).toISOString().slice(0, 10);
+
+      $("foodDate").value = localDate;
+    }
+
+    // ================= LOGIN =================
+
+    $("loginForm").addEventListener("submit", async event => {
+      event.preventDefault();
+
+      $("loginBtn").disabled = true;
+      message($("loginStatus"), "Signing in...");
+
+      try {
+        const credential = await signInWithEmailAndPassword(
+          auth,
+          $("adminEmail").value.trim(),
+          $("adminPassword").value
+        );
+
+        if (!ADMIN_UIDS.includes(credential.user.uid)) {
+          await signOut(auth);
+          message(
+            $("loginStatus"),
+            "Access denied: this is not the authorized admin account.",
+            "error"
+          );
+        }
+      } catch (error) {
+        console.error("Login error:", error);
+        message(
+          $("loginStatus"),
+          "Login failed: " + (error.message || error.code),
+          "error"
+        );
+      } finally {
+        $("loginBtn").disabled = false;
+      }
+    });
+
+    $("logoutBtn").addEventListener("click", async () => {
+      try {
+        await signOut(auth);
+      } catch (error) {
+        message($("status"), "Logout failed: " + error.message, "error");
+      }
+    });
+
+    function showLoggedOut() {
+      isAdmin = false;
+      allResponses = [];
+      $("loginPanel").style.display = "block";
+      $("dashboard").style.display = "none";
+      $("logoutBtn").style.display = "none";
+      message($("loginStatus"), "");
+      message($("status"), "Please log in.");
+    }
+
+    async function verifyAdminSession(user) {
+      if (!user) {
+        showLoggedOut();
+        return;
+      }
+
+      if (!ADMIN_UIDS.includes(user.uid)) {
+        await signOut(auth);
+        showLoggedOut();
+        message(
+          $("loginStatus"),
+          "Access denied: this account is not the authorized admin.",
+          "error"
+        );
+        return;
+      }
+
+      isAdmin = true;
+      $("loginPanel").style.display = "none";
+      $("dashboard").style.display = "block";
+      $("logoutBtn").style.display = "inline-block";
+
+      await Promise.all([loadResponses(), loadInventory()]);
+    }
+
+    // ================= STUDENT RESPONSES =================
+
+    async function loadResponses() {
+      if (!isAdmin || !ADMIN_UIDS.includes(auth.currentUser?.uid) ||
+          loadingResponses) return;
+
+      loadingResponses = true;
+      $("refreshBtn").disabled = true;
+      message($("status"), "Loading responses...");
+
+      try {
+        const snapshot = await getDocs(collection(db, "mealResponses"));
+
+        if (!isAdmin || !ADMIN_UIDS.includes(auth.currentUser?.uid)) return;
+
+        allResponses = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+
+        allResponses.sort((a, b) =>
+          safeText(b.mealDate).localeCompare(safeText(a.mealDate))
+        );
+
+        message(
+          $("status"),
+          `Loaded ${allResponses.length} response(s) from Firebase.`,
+          "success"
+        );
+
+        renderResponses();
+      } catch (error) {
+        console.error("Responses error:", error);
+        message(
+          $("status"),
+          `Could not load responses: ${error.code || ""} ${error.message}`,
+          "error"
+        );
+      } finally {
+        loadingResponses = false;
+        $("refreshBtn").disabled = false;
+      }
+    }
+
+    function renderResponses() {
+      const search = $("search").value.trim().toLowerCase();
+      const date = $("dateFilter").value;
+      const meal = $("mealFilter").value;
+
+      const filtered = allResponses.filter(item =>
+        safeText(item.studentId).toLowerCase().includes(search) &&
+        (!date || item.mealDate === date) &&
+        (!meal || item.meal === meal)
+      );
+
+      $("responseRows").replaceChildren();
+
+      if (!filtered.length) {
+        const row = document.createElement("tr");
+        const cell = addCell(row, "No matching responses found.");
+        cell.colSpan = 6;
+        $("responseRows").appendChild(row);
+      } else {
+        filtered.forEach(item => {
+          const row = document.createElement("tr");
+
+          addCell(row, item.studentId);
+          addCell(row, item.mealDate);
+          addCell(row, item.meal);
+          addCell(row, item.foodType);
+          addCell(row, item.attendance);
+
+          const preferences = Object.entries(item.itemPreferences || {})
+            .map(([name, choice]) => `${name}: ${choice}`)
+            .join("\n");
+
+          const cell = addCell(row, preferences || "None");
+          cell.style.whiteSpace = "pre-line";
+          $("responseRows").appendChild(row);
+        });
+      }
+
+      $("total").textContent = filtered.length;
+
+      for (const mealName of ["Breakfast", "Lunch", "Dinner"]) {
+        $("" + mealName.toLowerCase()).textContent =
+          filtered.filter(item => item.meal === mealName).length;
+      }
+
+      const attending = filtered.filter(item =>
+        safeText(item.attendance).trim().toLowerCase() === "yes"
+      );
+
+      $("attending").textContent = attending.length;
+
+      for (const mealName of ["Breakfast", "Lunch", "Dinner"]) {
+        $("pred" + mealName).textContent =
+          attending.filter(item => item.meal === mealName).length;
+      }
+    }
+
+    $("refreshBtn").addEventListener("click", loadResponses);
+    $("search").addEventListener("input", renderResponses);
+    $("dateFilter").addEventListener("change", renderResponses);
+    $("mealFilter").addEventListener("change", renderResponses);
+
+    // ================= FOOD QUANTITY =================
+
+    const preparedInput = $("preparedQty");
+    const servedInput = $("servedQty");
+    const donationInput = $("donationQty");
+    const safeFoodInput = $("safeFood");
+
+    function updateRemaining() {
+      const prepared = Number(preparedInput.value) || 0;
+      const served = Number(servedInput.value) || 0;
+
+      $("remainingQty").textContent =
+        Math.max(0, prepared - served);
+    }
+
+    preparedInput.addEventListener("input", updateRemaining);
+    servedInput.addEventListener("input", updateRemaining);
+
+    $("foodQuantityForm").addEventListener("submit", async event => {
+      event.preventDefault();
+
+      if (!isAdmin || !ADMIN_UIDS.includes(auth.currentUser?.uid)) {
+        message($("foodStatus"), "Please log in as the authorized admin.", "error");
+        return;
+      }
+
+      const prepared = Number(preparedInput.value);
+      const served = Number(servedInput.value);
+      const donation = Number(donationInput.value);
+      const remaining = prepared - served;
+
+      if (
+        !Number.isInteger(prepared) ||
+        !Number.isInteger(served) ||
+        !Number.isInteger(donation) ||
+        prepared < 0 ||
+        served < 0 ||
+        donation < 0 ||
+        served > prepared ||
+        donation > remaining
+      ) {
+        message(
+          $("foodStatus"),
+          "Invalid quantities. Served must not exceed prepared, and donation must not exceed remaining portions.",
+          "error"
+        );
+        return;
+      }
+
+      if (donation > 0 && !safeFoodInput.checked) {
+        message(
+          $("foodStatus"),
+          "Confirm food safety before recording a donation quantity.",
+          "error"
+        );
+        return;
+      }
+
+      $("saveFoodBtn").disabled = true;
+      message($("foodStatus"), "Saving food record...");
+
+      try {
+        await addDoc(collection(db, "foodInventory"), {
+          mealDate: $("foodDate").value,
+          meal: $("foodMeal").value,
+          preparedPortions: prepared,
+          servedPortions: served,
+          remainingPortions: remaining,
+          safeToDonate: safeFoodInput.checked,
+          donationPortions: safeFoodInput.checked ? donation : 0,
+          notes: $("foodNotes").value.trim(),
+          createdAt: serverTimestamp(),
+          createdBy: auth.currentUser.uid
+        });
+
+        message($("foodStatus"), "Food record saved successfully!", "success");
+
+        $("foodQuantityForm").reset();
+        setDefaultFoodDate();
+        $("remainingQty").textContent = "0";
+
+        await loadInventory();
+      } catch (error) {
+        console.error("Food record error:", error);
+        message(
+          $("foodStatus"),
+          `Could not save food record: ${error.code || ""} ${error.message}`,
+          "error"
+        );
+      } finally {
+        $("saveFoodBtn").disabled = false;
+      }
+    });
+
+    // ================= FOOD RECORD HISTORY =================
+
+    async function loadInventory() {
+      if (!isAdmin || !ADMIN_UIDS.includes(auth.currentUser?.uid) ||
+          loadingInventory) return;
+
+      loadingInventory = true;
+      $("refreshFoodBtn").disabled = true;
+      message($("inventoryStatus"), "Loading food records...");
+
+      try {
+        const snapshot = await getDocs(collection(db, "foodInventory"));
+
+        if (!isAdmin || !ADMIN_UIDS.includes(auth.currentUser?.uid)) return;
+
+        const records = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+
+        records.sort((a, b) =>
+          safeText(b.mealDate).localeCompare(safeText(a.mealDate))
+        );
+
+        $("inventoryRows").replaceChildren();
+
+        if (!records.length) {
+          const row = document.createElement("tr");
+          const cell = addCell(row, "No food records yet.");
+          cell.colSpan = 8;
+          $("inventoryRows").appendChild(row);
+        } else {
+          records.forEach(item => {
+            const row = document.createElement("tr");
+
+            addCell(row, item.mealDate);
+            addCell(row, item.meal);
+            addCell(row, item.preparedPortions);
+            addCell(row, item.servedPortions);
+            addCell(row, item.remainingPortions);
+            addCell(row, item.safeToDonate ? "Yes" : "No");
+            addCell(row, item.donationPortions);
+            addCell(row, item.notes);
+
+            $("inventoryRows").appendChild(row);
+          });
+        }
+
+        message(
+          $("inventoryStatus"),
+          `Loaded ${records.length} food record(s).`,
+          "success"
+        );
+      } catch (error) {
+        console.error("Inventory error:", error);
+        message(
+          $("inventoryStatus"),
+          `Could not load food records: ${error.code || ""} ${error.message}`,
+          "error"
+        );
+
+        $("inventoryRows").replaceChildren();
+        const row = document.createElement("tr");
+        const cell = addCell(row, "Check Firestore Rules and admin access.");
+        cell.colSpan = 8;
+        $("inventoryRows").appendChild(row);
+      } finally {
+        loadingInventory = false;
+        $("refreshFoodBtn").disabled = false;
+      }
+    }
+
+    $("refreshFoodBtn").addEventListener("click", loadInventory);
+
+    // Initialize page
+    setDefaultFoodDate();
+    onAuthStateChanged(auth, verifyAdminSession);
+  </script>
+</body>
+</html>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Mess - Meal Confirmation</title>
+  <link rel="stylesheet" href="./style.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <main class="container">
+    <section class="card">
+      <h1>Smart Mess</h1>
+      <p class="subtitle">Student Meal Confirmation</p>
+
+      <form id="mealForm">
+        <label for="studentId">Student ID / PRN</label>
+        <input
+          type="text"
+          id="studentId"
+          placeholder="Enter your Student ID"
+          required
+        >
+
+        <label for="mealDate">Meal Date</label>
+        <input type="date" id="mealDate" required>
+
+        <label for="meal">Select Meal</label>
+        <select id="meal" required>
+          <option value="Breakfast">Breakfast</option>
+          <option value="Lunch">Lunch</option>
+          <option value="Dinner">Dinner</option>
+        </select>
+
+        <label for="foodType">Food Preference</label>
+        <select id="foodType" required>
+          <option value="Veg">Veg</option>
+          <option value="Non-Veg">Non-Veg</option>
+        </select>
+
+        <label for="attendance">Will you attend this meal?</label>
+        <select id="attendance" required>
+          <option value="Yes">Yes, I will attend</option>
+          <option value="No">No, I will not attend</option>
+        </select>
+
+        <div id="menu"></div>
+
+        <button type="submit" id="submitBtn">
+          Review My Response
+        </button>
+      </form>
+
+      <div id="result" aria-live="polite"></div>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,159 @@
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f1f6f2;
+  color: #18352a;
+}
+
+.container {
+  width: 100%;
+  padding: 24px 16px;
+}
+
+.card {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 30px;
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+}
+
+h1 {
+  margin: 0 0 8px;
+  color: #176b4d;
+}
+
+.subtitle {
+  margin: 0 0 28px;
+  color: #64746b;
+}
+
+form > label {
+  display: block;
+  margin: 18px 0 8px;
+  font-weight: 700;
+}
+
+input[type="text"],
+input[type="date"],
+select {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px;
+  border: 1px solid #cbd9cf;
+  border-radius: 9px;
+  background: white;
+  font-size: 16px;
+}
+
+input:focus,
+select:focus {
+  outline: 2px solid #72b89a;
+  border-color: #176b4d;
+}
+
+#menu {
+  margin-top: 24px;
+}
+
+#menu h3 {
+  margin-bottom: 16px;
+  color: #176b4d;
+}
+
+.menu-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 10px;
+  margin-bottom: 8px;
+  background: #f5f8f5;
+  border-radius: 8px;
+}
+
+.menu-item > span {
+  flex: 1 1 180px;
+  font-weight: 600;
+}
+
+.menu-item label {
+  white-space: nowrap;
+}
+
+.menu-item input {
+  accent-color: #176b4d;
+}
+
+button {
+  width: 100%;
+  min-height: 52px;
+  margin-top: 24px;
+  border: none;
+  border-radius: 9px;
+  background: #176b4d;
+  color: white;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #10553c;
+}
+
+button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+#result {
+  margin-top: 22px;
+  overflow-wrap: anywhere;
+}
+
+.result-card {
+  padding: 18px;
+  border-radius: 10px;
+  background: #edf7f0;
+  border: 1px solid #c7e3d0;
+}
+
+.result-card h3 {
+  margin-top: 0;
+}
+
+.result-card pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
+
+.status {
+  font-weight: 700;
+}
+
+.success {
+  color: #176b4d;
+}
+
+.warning {
+  color: #996000;
+}
+
+@media (max-width: 600px) {
+  .container {
+    padding: 12px;
+  }
+
+  .card {
+    padding: 20px 16px;
+  }
+}
